@@ -1,0 +1,59 @@
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
+import React from 'react';
+import { ComicFace } from './types';
+import { Panel } from './Panel';
+
+interface BookProps {
+    comicFaces: ComicFace[];
+    currentSheetIndex: number;
+    totalPages: number; // New prop for dynamic length
+    isStarted: boolean;
+    isSetupVisible: boolean;
+    isExporting: boolean;
+    isReadyToRead: boolean;
+    gateProgress: string;
+    onSheetClick: (index: number) => void;
+    onChoice: (pageIndex: number, choice: string) => void;
+    onOpenBook: () => void;
+    onDownloadPDF: () => void;
+    onDownloadVideo: () => void;
+    onReset: () => void;
+}
+
+export const Book: React.FC<BookProps> = (props) => {
+    const sheetsToRender = [];
+    if (props.comicFaces.length > 0) {
+        // Cover Sheet (Page 0 and Page 1)
+        sheetsToRender.push({ front: props.comicFaces[0], back: props.comicFaces.find(f => f.pageIndex === 1) });
+        
+        // Dynamic Inner Sheets (2,3), (4,5), etc. up to Back Cover
+        for (let i = 2; i <= props.totalPages; i += 2) {
+            sheetsToRender.push({ front: props.comicFaces.find(f => f.pageIndex === i), back: props.comicFaces.find(f => f.pageIndex === i + 1) });
+        }
+    } else if (props.isSetupVisible) {
+        // Placeholder sheet for initial render behind setup
+        sheetsToRender.push({ front: undefined, back: undefined });
+    }
+
+    return (
+        <div className={`book ${props.currentSheetIndex > 0 ? 'opened' : ''} transition-all duration-1000 ease-in-out`}
+           style={ (props.isSetupVisible) ? { transform: 'translateZ(-600px) translateY(-100px) rotateX(20deg) scale(0.9)', filter: 'blur(6px) brightness(0.7)', pointerEvents: 'none' } : {}}>
+          {sheetsToRender.map((sheet, i) => (
+              <div key={i} className={`paper ${i < props.currentSheetIndex ? 'flipped' : ''}`} style={{ zIndex: i < props.currentSheetIndex ? i : sheetsToRender.length - i }}
+                   onClick={() => props.onSheetClick(i)}>
+                  <div className="front">
+                      <Panel face={sheet.front} isExporting={props.isExporting} isReadyToRead={props.isReadyToRead} gateProgress={props.gateProgress} onChoice={props.onChoice} onOpenBook={props.onOpenBook} onDownloadPDF={props.onDownloadPDF} onDownloadVideo={props.onDownloadVideo} onReset={props.onReset} />
+                  </div>
+                  <div className="back">
+                      <Panel face={sheet.back} isExporting={props.isExporting} isReadyToRead={props.isReadyToRead} gateProgress={props.gateProgress} onChoice={props.onChoice} onOpenBook={props.onOpenBook} onDownloadPDF={props.onDownloadPDF} onDownloadVideo={props.onDownloadVideo} onReset={props.onReset} />
+                  </div>
+              </div>
+          ))}
+      </div>
+    );
+}
